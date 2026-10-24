@@ -1,0 +1,14 @@
+OpenCC's own conversion test cases, used as the oracle for s2t phrases
+(S2TPhrasesTests, scripts/verify-s2t-phrases.sh).
+
+Project:  Open Chinese Convert (OpenCC), https://github.com/BYVoid/OpenCC
+Release:  ver.1.4.2, commit 025f371dc76b598d77384fbdab90c937471844d8
+License:  Apache License 2.0 (LICENSE in this folder, copied from the same commit)
+Retrieved: 2026-10-18, unmodified
+
+File            Upstream path                     sha256
+testcases.json  test/testcases/testcases.json     3f8273c5f432090ec1a8a01bd4d545046ad5a28e69eb41a081c5e3e54d3e402b
+LICENSE         LICENSE                           b534e465949558eec2597b04f5092b5e161236a68dfbfd04d547592ac3964308
+
+testcases.json is JSON5 (trailing commas). Only the "s2t" and "s2tw"
+expectations are used.

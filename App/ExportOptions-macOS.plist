@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <!-- `make mac`: signed for distribution outside the Mac App Store. The app
+         uses no capability that needs a provisioning profile, so the Developer ID
+         certificate in this keychain is all the export signs with. Notarization
+         is `make notarize`, not part of the export. -->
+    <key>method</key>
+    <string>developer-id</string>
+    <key>teamID</key>
+    <string>NKJSLB6HBR</string>
+    <key>signingStyle</key>
+    <string>manual</string>
+    <key>signingCertificate</key>
+    <string>Developer ID Application</string>
+    <key>destination</key>
+    <string>export</string>
+</dict>
+</plist>

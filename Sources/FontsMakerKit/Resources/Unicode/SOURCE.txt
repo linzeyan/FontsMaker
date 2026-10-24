@@ -1,0 +1,9 @@
+Unicode Vertical_Orientation data used by the pseudoVertical operation (technical design §5.3, UAX #50).
+
+Project:  Unicode Character Database 18.0.0
+License:  Unicode License v3 (LICENSE.txt in this folder, from https://www.unicode.org/license.txt)
+Retrieved: 2026-10-17, unmodified
+
+File                     URL                                                            sha256
+VerticalOrientation.txt  https://www.unicode.org/Public/18.0.0/ucd/VerticalOrientation.txt  0803e09669d7aa7137de678e55b848bd418c6632694fa1b05f0b40941103c748
+LICENSE.txt              https://www.unicode.org/license.txt                            e7a93b009565cfce55919a381437ac4db883e9da2126fa28b91d12732bc53d96

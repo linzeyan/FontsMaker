@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <!-- `make ipa`: an App Store build written to disk, not uploaded. -->
+    <key>method</key>
+    <string>app-store-connect</string>
+    <key>teamID</key>
+    <string>NKJSLB6HBR</string>
+    <key>signingStyle</key>
+    <string>automatic</string>
+    <key>uploadSymbols</key>
+    <true/>
+    <key>destination</key>
+    <string>export</string>
+    <!-- Off, so the IPA carries the build number in the archive's Info.plist. On
+         (Xcode's default), the export asks App Store Connect and silently renumbers
+         a taken build, so the IPA matches neither git nor the tag (seen in
+         novel_reader: a 1.7.3 (18) archive came out as a 1.7.3 (19) IPA). A taken
+         number should fail at upload, where it can be seen. -->
+    <key>manageAppVersionAndBuildNumber</key>
+    <false/>
+</dict>
+</plist>

@@ -1,0 +1,32 @@
+OpenCC conversion tables used by the s2t operation (technical design §5.4).
+
+Project:  Open Chinese Convert (OpenCC), https://github.com/BYVoid/OpenCC
+Release:  ver.1.4.2, commit 025f371dc76b598d77384fbdab90c937471844d8
+License:  Apache License 2.0 (LICENSE in this folder, copied from the same commit)
+Retrieved: 2026-10-17 (STCharacters, TWVariants, LICENSE) and 2026-10-18 (the rest), unmodified
+
+File                                         Upstream path                          sha256
+STCharacters.txt                             data/dictionary/STCharacters.txt       a0ca1601c70648cf48b33c3c6210ccbecc5c7eead4b4c3daf76587ba2c03582b
+TWVariants.txt                               data/dictionary/TWVariants.txt         e187278e119c427ca561180ac5da5b20e9f8681190458f35c327ce499e95a6a5
+STPhrases.txt                                data/dictionary/STPhrases.txt          f6eab5e5c6dd7640597878d3dfc6599ee1279d2bc91561eadd8e114194e2925a
+TWVariantsPhrases.txt                        data/dictionary/TWVariantsPhrases.txt  36df033675a2e9152927fa8419f0732a061cb4909c5060f25a5cfc9b08ffff06
+STPhrases_GeneratedFromRegionalPhrases.txt   (generated, see below)                 9ab40618a9b162cca6dae9ec6767a8c4669017a20b2d6da5f94b7a7f99d09170
+LICENSE                                      LICENSE                                b534e465949558eec2597b04f5092b5e161236a68dfbfd04d547592ac3964308
+
+Download URL pattern:
+https://raw.githubusercontent.com/BYVoid/OpenCC/025f371dc76b598d77384fbdab90c937471844d8/<upstream path>
+
+STPhrases_GeneratedFromRegionalPhrases.txt is not in the OpenCC repository:
+OpenCC's data/CMakeLists.txt generates it at build time from HKPhrases.txt and
+TWPhrases.txt (simplified projections of their keys through t2s.json), and
+s2t.json and s2tw.json use it next to STPhrases.txt. It was regenerated from
+the commit above, following that rule, with
+
+    bash scripts/fetch-opencc.sh
+    python3 -I scripts/opencc_regional_phrases.py \
+        ~/Library/Caches/FontsMaker/opencc-025f371dc76b598d77384fbdab90c937471844d8 <work dir> <output>
+
+(Homebrew opencc 1.4.2 and opencc_dict as tools). Its 556 entries equal the
+STPhrases_GeneratedFromRegionalPhrases.ocd2 that Homebrew's opencc 1.4.2
+installs (dumped with opencc_dict); scripts/verify-s2t-phrases.sh repeats both
+the regeneration and the comparison.

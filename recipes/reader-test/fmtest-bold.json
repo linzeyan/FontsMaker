@@ -1,0 +1,15 @@
+{
+  "formatVersion": 1,
+  "source": {
+    "file": "GuanKiapTsingKhai.ttf",
+    "sha256": "758632243c499e431fd0c847f5e8c431acf59a9b41a26237a819466139994d38"
+  },
+  "output": {
+    "familyName": "FMTest Bold",
+    "styleName": "Medium",
+    "weightClass": 500
+  },
+  "steps": [
+    { "op": "embolden", "weight": 12 }
+  ]
+}

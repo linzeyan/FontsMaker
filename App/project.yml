@@ -1,0 +1,172 @@
+# XcodeGen spec (technical design §3). `xcodegen generate` writes
+# FontsMaker.xcodeproj next to this file; the project is not committed.
+name: FontsMaker
+options:
+  bundleIdPrefix: app.fontsmaker
+  deploymentTarget:
+    macOS: "14.0"
+    iOS: "17.0"
+  developmentLanguage: zh-Hant
+  createIntermediateGroups: true
+
+packages:
+  FontsMaker:
+    path: ..
+  # Catalog and custom-source downloads: GitHub releases ship fonts in zips
+  # (plan, Phase 4b). MIT; credited on the licenses screen.
+  ZIPFoundation:
+    url: https://github.com/weichsel/ZIPFoundation
+    exactVersion: 0.9.20
+
+settings:
+  base:
+    SWIFT_VERSION: "6.0"
+    MARKETING_VERSION: "0.1.0"
+    CURRENT_PROJECT_VERSION: "1"
+    GENERATE_INFOPLIST_FILE: YES
+    INFOPLIST_KEY_CFBundleDisplayName: FontsMaker
+    ENABLE_USER_SCRIPT_SANDBOXING: YES
+    DEAD_CODE_STRIPPING: YES
+    # Icon Composer document from scripts/make-app-icon.swift; Xcode flattens
+    # it to PNGs for the macOS 14 / iOS 17 deployment targets.
+    ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+
+targets:
+  FontsMaker:
+    type: application
+    platform: macOS
+    sources:
+      - path: Sources/Shared
+      - path: Sources/macOS
+      - path: Resources/AppIcon.icon
+    dependencies:
+      - package: FontsMaker
+        product: FontsMakerKit
+      - package: ZIPFoundation
+    settings:
+      base:
+        PRODUCT_NAME: FontsMaker
+        PRODUCT_BUNDLE_IDENTIFIER: app.fontsmaker.FontsMaker
+        INFOPLIST_KEY_LSApplicationCategoryType: public.app-category.utilities
+        # Ad-hoc signed: runs locally and in the test VM without a team.
+        CODE_SIGN_STYLE: Manual
+        CODE_SIGN_IDENTITY: "-"
+        ENABLE_HARDENED_RUNTIME: NO
+
+  FontsMakerIOS:
+    type: application
+    platform: iOS
+    sources:
+      - path: Sources/Shared
+      - path: Sources/iOS
+      - path: Resources/AppIcon.icon
+    dependencies:
+      - package: FontsMaker
+        product: FontsMakerKit
+      - package: ZIPFoundation
+    settings:
+      base:
+        PRODUCT_NAME: FontsMaker
+        PRODUCT_BUNDLE_IDENTIFIER: app.fontsmaker.FontsMaker
+        TARGETED_DEVICE_FAMILY: "1,2"
+        INFOPLIST_KEY_UILaunchScreen_Generation: YES
+        INFOPLIST_KEY_UIApplicationSceneManifest_Generation: YES
+        INFOPLIST_KEY_UISupportedInterfaceOrientations: UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight
+        INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad: UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight
+
+  # View-model tests compile the platform-neutral models directly instead of
+  # loading the app as a test host, so running them opens no window. The same
+  # bundle runs on macOS and on the iOS Simulator.
+  FontsMakerTests:
+    type: bundle.unit-test
+    platform: auto
+    supportedDestinations: [macOS, iOS]
+    sources:
+      - path: Sources/Shared/Models
+      - path: Tests
+    dependencies:
+      - package: FontsMaker
+        product: FontsMakerKit
+      - package: ZIPFoundation
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: app.fontsmaker.FontsMakerTests
+        CODE_SIGN_STYLE: Manual
+        CODE_SIGN_IDENTITY: "-"
+
+  # iOS end to end: S1–S3 and 加粗＋直排 through the three steps, the Files
+  # picker, build, review and export, with a screenshot per step. Only
+  # scripts/ios-flows.sh runs it (it puts the source font into the
+  # simulator's Files storage first); no other scheme tests it.
+  FontsMakerIOSFlows:
+    type: bundle.ui-testing
+    platform: iOS
+    sources:
+      - path: UITests
+    dependencies:
+      - target: FontsMakerIOS
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: app.fontsmaker.FontsMakerIOSFlows
+        TEST_TARGET_NAME: FontsMakerIOS
+
+  # Device benchmark: full builds of the effect combinations, timed and with peak memory.
+  # Only the FontsMakerBench scheme (Release) runs it, via scripts/ios-bench.sh;
+  # no other scheme tests it, so normal runs neither run nor skip it. Hosted by
+  # the app, as test bundles without a host do not run on iOS devices, so the
+  # numbers come from the process the app's own builds run in. The source font
+  # is copied in from the fixtures cache at build time.
+  FontsMakerBench:
+    type: bundle.unit-test
+    platform: iOS
+    sources:
+      - path: Bench
+    dependencies:
+      - target: FontsMakerIOS
+      - package: FontsMaker
+        product: FontsMakerKit
+    postCompileScripts:
+      - name: Copy the benchmark font from the fixtures cache
+        script: cp "$SCRIPT_INPUT_FILE_0" "$SCRIPT_OUTPUT_FILE_0"
+        inputFiles:
+          - $(HOME)/Library/Caches/FontsMaker/fixtures/GuanKiapTsingKhai.ttf
+        outputFiles:
+          - $(TARGET_BUILD_DIR)/$(UNLOCALIZED_RESOURCES_FOLDER_PATH)/GuanKiapTsingKhai.ttf
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: app.fontsmaker.FontsMakerBench
+        # XcodeGen derives the host from the target name; the app's product is FontsMaker.
+        TEST_HOST: $(BUILT_PRODUCTS_DIR)/FontsMaker.app/FontsMaker
+        BUNDLE_LOADER: $(TEST_HOST)
+
+schemes:
+  FontsMaker:
+    build:
+      targets:
+        FontsMaker: all
+    test:
+      targets:
+        - FontsMakerTests
+  FontsMakerIOS:
+    build:
+      targets:
+        FontsMakerIOS: all
+    test:
+      targets:
+        - FontsMakerTests
+  FontsMakerIOSFlows:
+    build:
+      targets:
+        FontsMakerIOSFlows: [test]
+    test:
+      targets:
+        - FontsMakerIOSFlows
+  FontsMakerBench:
+    build:
+      targets:
+        FontsMakerBench: [test]
+    test:
+      # Debug builds the engine without optimization: several times slower.
+      config: Release
+      targets:
+        - FontsMakerBench
