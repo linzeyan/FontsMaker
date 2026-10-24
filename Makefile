@@ -8,6 +8,7 @@
 # Shipping, one command each:
 #   make release        # App Store .ipa of the iOS app: build/ios/export/FontsMaker.ipa (not uploaded)
 #   make mac notarize   # Developer ID macOS app, notarized and stapled: build/mac/FontsMaker.zip
+#   make dist VERSION=x.y.z  # ad hoc signed Mac app + CLI zips for a GitHub release: build/dist/
 #
 # App/FontsMaker.xcodeproj is generated from App/project.yml via xcodegen — it is not
 # hand-edited and not committed. Edit App/project.yml, then `make generate`.
@@ -52,9 +53,10 @@ MAC_ZIP       := $(MAC_OUT)/FontsMaker.zip
 # The notarytool keychain profile, shared with wifi_detect. Create it once with
 # `xcrun notarytool store-credentials <name> --apple-id <id> --team-id NKJSLB6HBR`.
 NOTARY_PROFILE ?= zeyanlin-notary
+DIST          := $(BUILD)/dist
 
 .DEFAULT_GOAL := help
-.PHONY: help setup generate build build-mac build-ios test test-swift test-mac test-ios cli run run-mac run-device archive ipa release mac notarize clean
+.PHONY: help setup generate build build-mac build-ios test test-swift test-mac test-ios cli run run-mac run-device archive ipa release mac notarize dist clean
 
 help: ## Show this help
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) \
@@ -194,3 +196,24 @@ notarize: ## Notarize + staple the `make mac` build, zip it again (NOTARY_PROFIL
 	ditto -c -k --keepParent "$(MAC_DIST_APP)" "$(MAC_ZIP)"
 	spctl -a -vv -t exec "$(MAC_DIST_APP)"
 	@echo "Notarized Mac app → $(MAC_ZIP)"
+
+# --- GitHub release: what .github/workflows/release.yml uploads ---
+
+dist: generate ## Universal ad hoc signed Mac app + CLI zips for a GitHub release (VERSION=x.y.z): build/dist/
+	@test -n "$(VERSION)" || { echo "dist: VERSION= is required, e.g. make dist VERSION=0.1.0" >&2; exit 1; }
+	@# Ad hoc, as project.yml signs the Mac app: the CI runner has no Developer ID, and
+	@# the release notes say how to open an unnotarized app. The iOS app is not here:
+	@# an App Store .ipa cannot be installed from a download.
+	rm -rf $(DIST)
+	xcodebuild -project $(PROJECT) -scheme FontsMaker -configuration Release \
+		-destination 'generic/platform=macOS' -derivedDataPath $(DIST)/DerivedData build
+	ditto -c -k --keepParent $(DIST)/DerivedData/Build/Products/Release/FontsMaker.app \
+		$(DIST)/FontsMaker-$(VERSION)-macos-universal.zip
+	@# The CLI reads OpenCC and Unicode data through Bundle.module, which looks for the
+	@# resource bundle beside the executable, so the two ship in one folder.
+	swift build -c release --arch arm64 --arch x86_64
+	mkdir -p $(DIST)/FontsMaker-CLI-$(VERSION)
+	bin="$$(swift build -c release --arch arm64 --arch x86_64 --show-bin-path)" && \
+		cp -R "$$bin/fontsmaker" "$$bin/FontsMaker_FontsMakerKit.bundle" $(DIST)/FontsMaker-CLI-$(VERSION)/
+	ditto -c -k --keepParent $(DIST)/FontsMaker-CLI-$(VERSION) $(DIST)/FontsMaker-CLI-$(VERSION)-macos-universal.zip
+	@ls -l $(DIST)/*.zip

@@ -1,0 +1,73 @@
+name: Release
+
+# Push a tag that matches App/project.yml's MARKETING_VERSION, one tag per push:
+# GitHub sends no tag events when more than three tags arrive in one push.
+#   git tag v0.1.0 && git push origin refs/tags/v0.1.0
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  macos:
+    runs-on: macos-26
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v7
+      - name: Tag matches App/project.yml
+        run: |
+          version=$(awk -F'"' '/MARKETING_VERSION:/ {print $2}' App/project.yml)
+          if [ "v$version" != "$GITHUB_REF_NAME" ]; then
+            echo "::error::tag $GITHUB_REF_NAME does not match App/project.yml MARKETING_VERSION $version"
+            exit 1
+          fi
+      # The app icon is an Icon Composer document and the project is Swift 6: an
+      # older Xcode left as the image's default cannot build them.
+      - uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: latest-stable
+      - run: command -v xcodegen > /dev/null || brew install xcodegen
+      - run: make dist VERSION="${GITHUB_REF_NAME#v}"
+      - uses: actions/upload-artifact@v7
+        with:
+          name: macos
+          path: build/dist/*.zip
+          if-no-files-found: error
+
+  release:
+    needs: [macos]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          path: dist
+          merge-multiple: true
+      - name: Create the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          ls -l dist
+          gh release create "$GITHUB_REF_NAME" dist/* \
+            --repo "$GITHUB_REPOSITORY" \
+            --verify-tag \
+            --title "$GITHUB_REF_NAME" \
+            --generate-notes \
+            --notes "$(cat <<'EOF'
+          ## 安裝
+
+          **App（macOS 14 以上）**：下載 `FontsMaker-…-macos-universal.zip`，解壓縮後把 FontsMaker.app 拖進「應用程式」。App 沒有經過 Apple 公證，第一次開啟會被擋下：到「系統設定 › 隱私權與安全性」按「強制打開」，之後就能正常開啟。
+
+          **命令列工具**：下載 `FontsMaker-CLI-…-macos-universal.zip`，解開的資料夾裡 `fontsmaker` 和 `FontsMaker_FontsMakerKit.bundle` 要放在一起。先在終端機執行 `xattr -dr com.apple.quarantine FontsMaker-CLI-…`，系統才不會擋下沒有公證的執行檔。用法見 README。
+
+          iPhone／iPad 版沒有放在這裡：iOS App 無法從下載的檔案安裝。
+          EOF
+          )"
