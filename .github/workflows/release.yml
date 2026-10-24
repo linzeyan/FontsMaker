@@ -16,7 +16,9 @@ concurrency:
 
 jobs:
   macos:
-    runs-on: macos-26
+    # Xcode 27 is only on this image (public preview); macos-26 tops out at Xcode 26.6,
+    # whose Swift 6.3 compiler crashes building the app in Release.
+    runs-on: xcode-27
     timeout-minutes: 60
     steps:
       - uses: actions/checkout@v7
@@ -27,11 +29,12 @@ jobs:
             echo "::error::tag $GITHUB_REF_NAME does not match App/project.yml MARKETING_VERSION $version"
             exit 1
           fi
-      # The app icon is an Icon Composer document and the project is Swift 6: an
-      # older Xcode left as the image's default cannot build them.
-      - uses: maxim-lobanov/setup-xcode@v1
-        with:
-          xcode-version: latest-stable
+      # The Xcode the app is developed and tested with (27A9275). The image's default
+      # is 27.0 and it also carries a 27.2 beta.
+      - name: Select Xcode 27.1
+        run: |
+          sudo xcode-select -s /Applications/Xcode_27.1.app
+          xcodebuild -version
       - run: command -v xcodegen > /dev/null || brew install xcodegen
       - run: make dist VERSION="${GITHUB_REF_NAME#v}"
       - uses: actions/upload-artifact@v7
