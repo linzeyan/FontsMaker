@@ -158,7 +158,9 @@ enum CubicOutline {
     static func simplified(_ input: [CubicNode], tolerance: Double) -> (nodes: [CubicNode], maxError: Double) {
         var nodes = input
         guard nodes.count >= 3 else { return (nodes, 0) }
-        var samples = nodes.indices.map { samples(of: segment(nodes, $0), from: nodes[$0].point) }
+        // Self.: inside the closure, Swift 6.2 (Xcode 26) resolves a bare `samples`
+        // to the variable being declared and fails to build.
+        var samples = nodes.indices.map { Self.samples(of: segment(nodes, $0), from: nodes[$0].point) }
         var errors = [Double](repeating: 0, count: nodes.count)
         var changed = true
         while changed {
